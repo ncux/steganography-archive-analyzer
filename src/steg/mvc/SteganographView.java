@@ -35,7 +35,7 @@ public class SteganographView extends JFrame {
 	private JButton openInitialImageButton = null;
 
 	private JButton openFileToHideButton = null;
-
+ 
 	private JButton hideButton = null;
 
 	private JButton extractButton = null;
