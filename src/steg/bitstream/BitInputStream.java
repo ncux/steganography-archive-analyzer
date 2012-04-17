@@ -11,7 +11,9 @@ import java.io.InputStream;
  */
 public class BitInputStream {
 	private InputStream in;
+
 	private int buffer;
+
 	private int nextBit = 8;
 
 	/**
@@ -21,7 +23,7 @@ public class BitInputStream {
 		this.in = in;
 	}
 
-	synchronized public int readBit() throws IOException {
+	synchronized public Bit readBit() throws IOException {
 		if (in == null)
 			throw new IOException("Already closed");
 
@@ -37,31 +39,13 @@ public class BitInputStream {
 		int bit = buffer & (1 << nextBit);
 		nextBit++;
 
-		bit = bit == 0 ? 0 : 1;
-
-		return bit;
+		return new Bit(bit);
 	}
 
-	synchronized public int[] readBit(int size) throws IOException {
-		int[] bits = new int[size];
+	synchronized public Bit[] readBits(int size) throws IOException {
+		Bit[] bits = new Bit[size];
 		for (int i = 0; i < size; i++) {
-			if (in == null)
-				throw new IOException("Already closed");
-
-			if (nextBit == 8) {
-				buffer = in.read();
-
-				if (buffer == -1)
-					throw new EOFException();
-
-				nextBit = 0;
-			}
-			int bit = buffer & (1 << nextBit);
-			nextBit++;
-
-			bit = bit == 0 ? 0 : 1;
-
-			bits[i] = bit;
+			bits[i] = readBit();
 		}
 		return bits;
 	}

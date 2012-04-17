@@ -4,7 +4,7 @@ import steg.mvc.SteganographCtrl;
 import steg.mvc.SteganographModel;
 import steg.mvc.SteganographView;
 
-public class SteganographStart {
+public class SteganographLauncher {
 
 	/**
 	 * @param args

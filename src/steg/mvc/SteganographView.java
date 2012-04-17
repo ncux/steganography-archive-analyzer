@@ -9,10 +9,14 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
+import javax.swing.event.ChangeListener;
 
 public class SteganographView extends JFrame {
 
@@ -35,7 +39,7 @@ public class SteganographView extends JFrame {
 	private JButton openInitialImageButton = null;
 
 	private JButton openFileToHideButton = null;
- 
+
 	private JButton hideButton = null;
 
 	private JButton extractButton = null;
@@ -43,6 +47,8 @@ public class SteganographView extends JFrame {
 	private SteganographModel model;
 
 	private JTextArea extractedText;
+
+	private JSpinner bitsToUseSpinner;
 
 	public SteganographView(SteganographModel model) {
 		// super();
@@ -55,6 +61,12 @@ public class SteganographView extends JFrame {
 	private void initView() {
 		setSize(460, 640);
 		getContentPane().setLayout(null);
+
+		bitsToUseSpinner = new JSpinner();
+		bitsToUseSpinner.setBounds(30, 0, 200, 30);
+		SpinnerModel spinnerModel = new SpinnerNumberModel(1, 1, 4, 1);
+		bitsToUseSpinner.setModel(spinnerModel);
+		add(bitsToUseSpinner, null);
 
 		openInitialImageButton = new JButton();
 		openInitialImageButton.setBounds(30, 30, 200, 30);
@@ -123,7 +135,7 @@ public class SteganographView extends JFrame {
 		extractedText = new JTextArea();
 		extractedText.setBounds(235, 365, 200, 200);
 		extractedText.setBorder(new LineBorder(new Color(0)));
-		extractedText.setWrapStyleWord(true);
+		extractedText.setLineWrap(true);
 		extractedText.setText("Here will be extracted text");
 		JScrollPane extractedTextPane = new JScrollPane(extractedText);
 		extractedTextPane.setBounds(235, 365, 200, 200);
@@ -154,6 +166,14 @@ public class SteganographView extends JFrame {
 	public void addExtractListener(ActionListener cal, String actionCommand) {
 		extractButton.addActionListener(cal);
 		extractButton.setActionCommand(actionCommand);
+	}
+
+	// public void addBitsToUseSpinnerListener(ChangeListener cal) {
+	// bitsToUseSpinner.addChangeListener(cal);
+	// }
+
+	public Integer getBitsToUseSpinnerValue() {
+		return (Integer) bitsToUseSpinner.getModel().getValue();
 	}
 
 	public String getSecretFileName() {

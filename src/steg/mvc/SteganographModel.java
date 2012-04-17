@@ -13,16 +13,15 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import steg.bitstream.Bit;
 import steg.bitstream.BitInputStream;
 import steg.bitstream.BitOutputStream;
 
 public class SteganographModel {
 
-	final int BITS_TO_USE = 2;
+	private int bitsToUse = 0;
 
 	final int NUMBER_OF_COLOR_CHANNELS = 3;
-
-	final int BITS_TO_READ = NUMBER_OF_COLOR_CHANNELS * BITS_TO_USE;
 
 	// Hide
 	private File sourceFile = null;
@@ -30,6 +29,8 @@ public class SteganographModel {
 	private File outputFile = null;
 
 	private File secretFile = null;
+
+	private BitInputStream bitStream = null;
 
 	// Extract
 	private File resultFile = null;
@@ -42,7 +43,7 @@ public class SteganographModel {
 		secretFile = selectedFile;
 	}
 
-	public void setNameFileWithSecret(String secretFileName) {
+	public void createFileWithSecret(String secretFileName) {
 		if (secretFileName == null) {
 			return;
 		}
@@ -51,16 +52,15 @@ public class SteganographModel {
 	}
 
 	public void hideInformation() {
-
 		if (sourceFile == null || secretFile == null || outputFile == null) {
 			return;
 		}
 
-		BitInputStream theBitStream = null;
 		try {
-			theBitStream = new BitInputStream(new FileInputStream(secretFile));
+			bitStream = new BitInputStream(new FileInputStream(secretFile));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+			return;
 		}
 		BufferedImage sourceImage = null;
 		WritableRaster raster = null;// for get pixels
@@ -68,29 +68,50 @@ public class SteganographModel {
 		try {
 			sourceImage = ImageIO.read(sourceFile);
 			raster = sourceImage.getRaster();
-			int[] readedTextToSave = null;
-			boolean isEverythingWriteln = false;
-			for (int i = 0; i < raster.getWidth() && !isEverythingWriteln; i++) {
-				for (int j = 0; j < raster.getHeight() && !isEverythingWriteln; j++) {
+			for (int i = 0; i < raster.getWidth(); i++) {
+				for (int j = 0; j < raster.getHeight(); j++) {
 					int[] pixel = raster.getPixel(i, j,
 							new int[raster.getWidth() * raster.getHeight()]);
-					readedTextToSave = new int[BITS_TO_READ];
-					try {
-						readedTextToSave = theBitStream.readBit(BITS_TO_READ);
-					} catch (EOFException eof) {
-						isEverythingWriteln = true;
-					}
-					int[] newPixel = hideBits(pixel, readedTextToSave);
+					Bit[] bitsToSave = getBitsToSave();
+					// if (bitsToSave == null) {
+					// bitsToSave = new Bit[getNumberOfBitsToRead()];
+					// for (int k = 0; k < bitsToSave.length; k++) {
+					// bitsToSave[k] = new Bit(0);
+					// }
+					// }
+					int[] newPixel = hideBits(pixel, bitsToSave);
 					raster.setPixel(i, j, newPixel);
 				}
 			}
-			// sourceImage.setData(raster);
 			outputFile.createNewFile();
 			ImageIO.write(sourceImage, "bmp", outputFile);
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
+		} finally {
+			try {
+				if (bitStream != null) {
+					bitStream.close();
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
+	}
+
+	private Bit[] getBitsToSave() throws IOException {
+		Bit[] bitsToSave = new Bit[getNumberOfBitsToRead()];
+		try {
+			bitsToSave = bitStream.readBits(getNumberOfBitsToRead());
+		} catch (EOFException eof) {
+			// 1. write everything
+			// bitStream.close();
+			// bitStream = new BitInputStream(new FileInputStream(secretFile));
+			// bitsToSave = bitStream.readBits(getNumberOfBitsToRead());
+			// 2. stop
+			bitsToSave = null;
+		}
+		return bitsToSave;
 	}
 
 	/**
@@ -100,15 +121,28 @@ public class SteganographModel {
 	 * @param bitsToSave
 	 * @return changed pixel
 	 */
-	private int[] hideBits(int[] pixel, int[] bitsToSave) {
+	private int[] hideBits(int[] pixel, Bit[] bitsToSave) {
 		int[] resultedPixel = new int[NUMBER_OF_COLOR_CHANNELS];
+		if (bitsToSave == null) {
+			return pixel;
+		}
 		// offset for bits to save
 		int bitsOffset = 0;
 		for (int i = 0; i < NUMBER_OF_COLOR_CHANNELS; i++) {
 			byte byteValue = (byte) pixel[i];
 
 			// Clear last bits BITS_TO_USE
-			int mask = 0xFF - BITS_TO_USE;
+			int mask = 0xFF;// 0xFF - BITS_TO_USE;
+			if (bitsToUse == 1) {
+				mask = 0xFE;
+			} else if (bitsToUse == 2) {
+				mask = 0xFC;
+			} else if (bitsToUse == 3) {
+				mask = 0xF8;
+			} else if (bitsToUse == 4) {
+				mask = 0xF0;
+			}
+
 			resultedPixel[i] = byteValue & mask;
 			if (resultedPixel[i] < 0) {
 				resultedPixel[i] = 256 + resultedPixel[i];
@@ -116,7 +150,7 @@ public class SteganographModel {
 
 			// result[i] += readedTextToSave[secretOffset] >> 3;
 			// Set bits
-			for (int j = 0; j < BITS_TO_USE; j++) {
+			for (int j = 0; j < bitsToUse; j++) {
 				resultedPixel[i] = setBit(resultedPixel[i],
 						bitsToSave[bitsOffset], j);
 				bitsOffset += 1;
@@ -133,11 +167,11 @@ public class SteganographModel {
 	 * @param index offset
 	 * @return
 	 */
-	private int setBit(int b, int bit, int index) {
+	private int setBit(int b, Bit bit, int index) {
 		int mask = 1;
 		mask <<= index;
 
-		if (bit == 1) {
+		if (bit.getValue() == 1) {
 			b |= mask;
 		} else {
 			b &= ~mask;
@@ -178,7 +212,7 @@ public class SteganographModel {
 				for (int j = 0; j < raster.getHeight() && !isEverythingWriteln; j++) {
 					int[] pixel = raster.getPixel(i, j,
 							new int[raster.getWidth() * raster.getHeight()]);
-					int[] secretBits = getSecretBits(pixel);
+					Bit[] secretBits = getSecretBits(pixel);
 					theBitOutputStream.writeBits(secretBits);
 				}
 			}
@@ -194,12 +228,12 @@ public class SteganographModel {
 	 * @param pixel
 	 * @return secretBits
 	 */
-	private int[] getSecretBits(int[] pixel) {
-		int[] secretBits = new int[BITS_TO_READ];
+	private Bit[] getSecretBits(int[] pixel) {
+		Bit[] secretBits = new Bit[getNumberOfBitsToRead()];
 		int offsetBits = 0;
 		for (int i = 0; i < NUMBER_OF_COLOR_CHANNELS; i++) {
 			int color = pixel[i];
-			for (int j = 0; j < BITS_TO_USE; j++) {
+			for (int j = 0; j < bitsToUse; j++) {
 				secretBits[offsetBits] = getBit(color, j);
 				offsetBits += 1;
 			}
@@ -214,7 +248,7 @@ public class SteganographModel {
 	 * @param index offset
 	 * @return bit
 	 */
-	private int getBit(int b, int index) {
+	private Bit getBit(int b, int index) {
 		int bit = 0;
 
 		int mask = 1;
@@ -224,7 +258,7 @@ public class SteganographModel {
 		if (bit > 0) {
 			bit = 1;
 		}
-		return bit;
+		return new Bit(bit);
 	}
 
 	public BufferedImage getModifiedImage() {
@@ -269,5 +303,13 @@ public class SteganographModel {
 			return null;
 		}
 		return String.valueOf(b, 0, (int) resultFile.length());
+	}
+
+	public void setBitsToUse(Integer bitsToUseSpinnerValue) {
+		bitsToUse = bitsToUseSpinnerValue;
+	}
+
+	private int getNumberOfBitsToRead() {
+		return bitsToUse * NUMBER_OF_COLOR_CHANNELS;
 	}
 }

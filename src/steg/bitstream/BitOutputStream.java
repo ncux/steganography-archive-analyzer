@@ -10,22 +10,20 @@ import java.io.OutputStream;
  */
 public class BitOutputStream {
 	private OutputStream out;
+
 	private int buffer;
+
 	private int bitCount;
 
 	public BitOutputStream(OutputStream out) {
 		this.out = out;
 	}
 
-	synchronized public void writeBit(int bit) throws IOException {
+	synchronized public void writeBit(Bit bit) throws IOException {
 		if (out == null)
 			throw new IOException("Already closed");
 
-		if (bit != 0 && bit != 1) {
-			throw new IOException(bit + " is not a bit");
-		}
-
-		buffer |= bit << bitCount;
+		buffer |= bit.getValue() << bitCount;
 		bitCount++;
 
 		if (bitCount == 8) {
@@ -33,22 +31,9 @@ public class BitOutputStream {
 		}
 	}
 
-	synchronized public void writeBits(int[] bits) throws IOException {
+	synchronized public void writeBits(Bit[] bits) throws IOException {
 		for (int i = 0; i < bits.length; i++) {
-			int bit = bits[i];
-			if (out == null)
-				throw new IOException("Already closed");
-
-			if (bit != 0 && bit != 1) {
-				throw new IOException(bit + " is not a bit");
-			}
-
-			buffer |= bit << bitCount;
-			bitCount++;
-
-			if (bitCount == 8) {
-				flush();
-			}
+			writeBit(bits[i]);
 		}
 	}
 

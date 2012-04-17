@@ -4,6 +4,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JFileChooser;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import steg.common.SteganographConstants;
@@ -27,6 +29,7 @@ public class SteganographCtrl {
 				SteganographConstants.HIDE);
 		view.addExtractListener(new SteganographViewListener(),
 				SteganographConstants.EXTRACT);
+//		view.addBitsToUseSpinnerListener(new SteganographViewListener());
 	}
 
 	class SteganographViewListener implements ActionListener {
@@ -71,7 +74,8 @@ public class SteganographCtrl {
 		}
 
 		private void performHide() {
-			model.setNameFileWithSecret(view.getSecretFileName());
+			model.setBitsToUse(view.getBitsToUseSpinnerValue());
+			model.createFileWithSecret(view.getSecretFileName());
 			model.hideInformation();
 			view.setModifiedImage(model.getModifiedImage());
 		}
