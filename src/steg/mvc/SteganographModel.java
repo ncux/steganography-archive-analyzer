@@ -10,12 +10,18 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.imageio.ImageIO;
+
+import org.apache.tools.bzip2.CBZip2OutputStream;
 
 import steg.bitstream.Bit;
 import steg.bitstream.BitInputStream;
 import steg.bitstream.BitOutputStream;
+import steg.exception.WarningException;
 
 public class SteganographModel {
 
@@ -51,7 +57,7 @@ public class SteganographModel {
 				+ "\\" + secretFileName + ".bmp");
 	}
 
-	public void hideInformation() {
+	public void hideInformation() throws WarningException {
 		if (sourceFile == null || secretFile == null || outputFile == null) {
 			return;
 		}
@@ -64,21 +70,25 @@ public class SteganographModel {
 		}
 		BufferedImage sourceImage = null;
 		WritableRaster raster = null;// for get pixels
+		validataLength();
 		// getting colors
 		try {
 			sourceImage = ImageIO.read(sourceFile);
 			raster = sourceImage.getRaster();
-			for (int i = 0; i < raster.getWidth(); i++) {
-				for (int j = 0; j < raster.getHeight(); j++) {
+			boolean isFinished = false;
+			for (int i = 0; i < raster.getWidth() && !isFinished; i++) {
+				for (int j = 0; j < raster.getHeight() && !isFinished; j++) {
 					int[] pixel = raster.getPixel(i, j,
 							new int[raster.getWidth() * raster.getHeight()]);
 					Bit[] bitsToSave = getBitsToSave();
-					// if (bitsToSave == null) {
-					// bitsToSave = new Bit[getNumberOfBitsToRead()];
-					// for (int k = 0; k < bitsToSave.length; k++) {
-					// bitsToSave[k] = new Bit(0);
-					// }
-					// }
+					if (bitsToSave == null) {
+						isFinished = true;
+						break;
+						// bitsToSave = new Bit[getNumberOfBitsToRead()];
+						// for (int k = 0; k < bitsToSave.length; k++) {
+						// bitsToSave[k] = new Bit(0);
+						// }
+					}
 					int[] newPixel = hideBits(pixel, bitsToSave);
 					raster.setPixel(i, j, newPixel);
 				}
@@ -99,17 +109,30 @@ public class SteganographModel {
 
 	}
 
+	private void validataLength() throws WarningException {
+		long maxSizeToSave = sourceFile.length() * bitsToUse / 8;
+		long realSizeToSave = secretFile.length();
+
+		if (realSizeToSave > maxSizeToSave) {
+			throw new WarningException(
+					"Secret data can't be saved into current image"
+							+ "\nReal size: " + realSizeToSave + "\nMaxSize: "
+							+ maxSizeToSave);
+		}
+	}
+
 	private Bit[] getBitsToSave() throws IOException {
-		Bit[] bitsToSave = new Bit[getNumberOfBitsToRead()];
+		Bit[] bitsToSave = null;
 		try {
 			bitsToSave = bitStream.readBits(getNumberOfBitsToRead());
 		} catch (EOFException eof) {
 			// 1. write everything
 			// bitStream.close();
-			// bitStream = new BitInputStream(new FileInputStream(secretFile));
+			// bitStream = new BitInputStream(new
+			// FileInputStream(secretFile));
 			// bitsToSave = bitStream.readBits(getNumberOfBitsToRead());
 			// 2. stop
-			bitsToSave = null;
+			// bitsToSave = null;
 		}
 		return bitsToSave;
 	}
@@ -312,4 +335,97 @@ public class SteganographModel {
 	private int getNumberOfBitsToRead() {
 		return bitsToUse * NUMBER_OF_COLOR_CHANNELS;
 	}
+
+	public void gzip() throws WarningException {
+		if (outputFile == null) {
+			throw new WarningException("Output file is null");
+		}
+
+		try {
+			GZIPOutputStream out = new GZIPOutputStream(new FileOutputStream(
+					outputFile.getName() + ".gz"));
+
+			// Open the input file
+			FileInputStream in = new FileInputStream(outputFile);
+
+			// Transfer bytes from the input file to the GZIP output stream
+			byte[] buf = new byte[1024];
+			int len;
+			while ((len = in.read(buf)) > 0) {
+				out.write(buf, 0, len);
+			}
+			in.close();
+
+			// Complete the GZIP file
+			out.finish();
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	public void bzip2() throws WarningException {
+		if (outputFile == null) {
+			throw new WarningException("Output file is null");
+		}
+
+		try {
+			CBZip2OutputStream out = new CBZip2OutputStream(
+					new FileOutputStream(outputFile.getName() + ".bz2"));
+
+			// Open the input file
+			FileInputStream in = new FileInputStream(outputFile);
+
+			// Transfer bytes from the input file to the GZIP output stream
+			byte[] buf = new byte[1024];
+			int len;
+			while ((len = in.read(buf)) > 0) {
+				out.write(buf, 0, len);
+			}
+			in.close();
+
+			// Complete the GZIP file
+			// out.finish();
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	public void zip() throws WarningException {
+		if (outputFile == null) {
+			throw new WarningException("Output file is null");
+		}
+
+		try {
+			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(
+					outputFile.getName() + ".zip"));
+
+			// Open the input file
+			FileInputStream in = new FileInputStream(outputFile);
+
+			ZipEntry entry = new ZipEntry(outputFile.getName());
+			out.putNextEntry(entry);
+			// Transfer bytes from the input file to the GZIP output stream
+			byte[] buf = new byte[1024];
+			int len;
+			while ((len = in.read(buf)) > 0) {
+				out.write(buf, 0, len);
+			}
+			in.close();
+
+			// Complete the GZIP file
+			out.finish();
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
 }

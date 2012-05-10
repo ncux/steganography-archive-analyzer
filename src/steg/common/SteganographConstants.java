@@ -9,4 +9,10 @@ public interface SteganographConstants {
 	String HIDE = "Hide";
 
 	String EXTRACT = "Extract";
+
+	String GZIP = "GZIP";
+
+	String BZIP2 = "BZIP2";
+
+	String ZIP = "ZIP";
 }

@@ -44,11 +44,17 @@ public class SteganographView extends JFrame {
 
 	private JButton extractButton = null;
 
-	private SteganographModel model;
+	private SteganographModel model = null;
 
-	private JTextArea extractedText;
+	private JTextArea extractedText = null;
 
-	private JSpinner bitsToUseSpinner;
+	private JSpinner bitsToUseSpinner = null;
+
+	private JButton gzipButton = null;
+
+	private JButton bzip2Button = null;
+
+	private JButton zipButton = null;
 
 	public SteganographView(SteganographModel model) {
 		// super();
@@ -59,7 +65,7 @@ public class SteganographView extends JFrame {
 	}
 
 	private void initView() {
-		setSize(460, 640);
+		setSize(920, 640);
 		getContentPane().setLayout(null);
 
 		bitsToUseSpinner = new JSpinner();
@@ -143,6 +149,21 @@ public class SteganographView extends JFrame {
 				.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		add(extractedTextPane);
 
+		gzipButton = new JButton();
+		gzipButton.setBounds(445, 30, 200, 30);
+		gzipButton.setText("GZIP");
+		add(gzipButton, null);
+
+		bzip2Button = new JButton();
+		bzip2Button.setBounds(445, 65, 200, 30);
+		bzip2Button.setText("BZIP2");
+		add(bzip2Button, null);
+
+		zipButton = new JButton();
+		zipButton.setBounds(445, 100, 200, 30);
+		zipButton.setText("ZIP");
+		add(zipButton, null);
+
 		setTitle("Steganograph");
 	}
 
@@ -168,9 +189,20 @@ public class SteganographView extends JFrame {
 		extractButton.setActionCommand(actionCommand);
 	}
 
-	// public void addBitsToUseSpinnerListener(ChangeListener cal) {
-	// bitsToUseSpinner.addChangeListener(cal);
-	// }
+	public void addGzipListener(ActionListener cal, String actionCommand) {
+		gzipButton.addActionListener(cal);
+		gzipButton.setActionCommand(actionCommand);
+	}
+
+	public void addBzip2Listener(ActionListener cal, String actionCommand) {
+		bzip2Button.addActionListener(cal);
+		bzip2Button.setActionCommand(actionCommand);
+	}
+
+	public void addZipListener(ActionListener cal, String actionCommand) {
+		zipButton.addActionListener(cal);
+		zipButton.setActionCommand(actionCommand);
+	}
 
 	public Integer getBitsToUseSpinnerValue() {
 		return (Integer) bitsToUseSpinner.getModel().getValue();
